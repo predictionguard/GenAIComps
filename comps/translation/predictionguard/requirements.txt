@@ -1,0 +1,27 @@
+langchain  
+predictionguard
+pandas
+requests
+fastapi
+uvicorn
+pydantic
+unbabel-comet
+deepl
+nltk
+httpx 
+openai
+munch
+huggingface_hub
+requests
+translators
+aiohttp
+docarray
+fastapi
+opentelemetry-api
+opentelemetry-exporter-otlp
+opentelemetry-sdk
+prometheus-fastapi-instrumentator
+shortuuid
+Pillow
+pyyaml
+unbabel-comet @ git+https://github.com/Unbabel/COMET.git

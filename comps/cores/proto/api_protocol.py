@@ -50,6 +50,21 @@ class ChatCompletionToolsParam(BaseModel):
     type: Literal["function"] = "function"
     function: FunctionDefinition
 
+class TranslationResult(BaseModel):
+    translation: str
+    score: float
+    model: str
+    status: str
+
+class TranslationOutput(BaseModel):
+    translations: List[TranslationResult]
+    best_translation: Optional[str]
+    best_score: Optional[float]
+    best_translation_model: Optional[str]
+    created: int
+    id: str
+    object: str
+
 
 class ChatCompletionNamedFunction(BaseModel):
     name: str

@@ -1,0 +1,24 @@
+# Copyright (C) 2024 Prediction Guard, Inc.
+# SPDX-License-Identified: Apache-2.0
+
+services:
+  translation:
+    image: opea/translation:latest
+    container_name: translation-predictionguard
+    ports:
+      - "6000:6000"
+    ipc: host
+    environment:
+      # no_proxy: ${no_proxy}
+      # http_proxy: ${http_proxy}
+      # https_proxy: ${https_proxy}
+      PREDICTIONGUARD_API_KEY: ${PREDICTIONGUARD_API_KEY}
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}
+      DEEPL_API_KEY: ${DEEPL_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # CUSTOM_API_KEY: ${CUSTOM_API_KEY}
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge
