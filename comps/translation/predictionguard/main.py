@@ -552,5 +552,8 @@ def update_item(req: TranslateRequest):
     return translate_and_score(req.text, req.source_lang, req.target_lang)
 
 
+# if __name__ == "__main__":
+#     uvicorn.run(app, port=6000, host="0.0.0.0")
+
 if __name__ == "__main__":
-    uvicorn.run(app, port=6000, host="0.0.0.0")
+    opea_microservices["opea_service@translation"].start()
