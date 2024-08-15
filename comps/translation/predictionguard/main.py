@@ -29,11 +29,11 @@ nltk.download('punkt')
 ymlcfg = yaml.safe_load(open(os.path.join(sys.path[0], 'config.yml')))
 cfg = munch.munchify(ymlcfg)
 
-app = FastAPI()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 from comps import (
     ServiceType,
-    TextDoc,
+    opea_microservices,
     register_microservice,
     register_statistics,
 )
@@ -426,6 +426,12 @@ def custom_translation(text, source_language, target_language, model):
 #-----------------------------------------#
 # Concurrent Translation functionality    #
 #-----------------------------------------#
+
+class TranslateRequest(BaseModel):
+    text: str
+    source_lang: str
+    target_lang: str
+
     
 @register_microservice(
     name="opea_service@translation",
@@ -433,12 +439,11 @@ def custom_translation(text, source_language, target_language, model):
     endpoint="/v1/translation",
     host="0.0.0.0",
     port=6000,
-    input_datatype=TextDoc,
+    input_datatype=TranslateRequest,
     output_datatype=TranslationOutput,
 )
-
 @register_statistics(names=["opea_service@translation"])
-def translate_and_score(text, source_language_iso639, target_language_iso639):
+def translate_and_score(request: TranslateRequest):
 
     translation_results = []
     best_translation = None
@@ -454,38 +459,38 @@ def translate_and_score(text, source_language_iso639, target_language_iso639):
         if "predictionguard" in model or "custom" in model:
             engine_type = model.split('__')[0]
             pg_langs = cfg.engines[engine_type]['models'][model.split('__')[-1]].languages
-            if target_language_iso639 in pg_langs and source_language_iso639 in pg_langs:
+            if request.target_lang in pg_langs and request.source_lang in pg_langs:
                 supported_models_filtered.append(model)
         else:
             other_langs = cfg.engines[model].languages
-            if target_language_iso639 in other_langs and source_language_iso639 in other_langs:
+            if request.target_lang in other_langs and request.source_lang in other_langs:
                 supported_models_filtered.append(model)
 
     def process_translation(model):
         try:
             if model == "deepl":
-                result = deepl_translation(text, target_language_iso639)
+                result = deepl_translation(request.text, request.target_lang)
             elif model == "google":
-                result = google_translation(text, target_language_iso639)
+                result = google_translation(request.text, request.source_lang, request.target_lang)
             elif "predictionguard" in model:
                 result = pg_openai_translation(
-                    text, 
-                    source_language_iso639, 
-                    target_language_iso639, 
+                    request.text, 
+                    request.source_lang, 
+                    request.target_lang, 
                     model.split('__')[-1]
                 )
             elif model == "openai":
                 result = pg_openai_translation(
-                    text, 
-                    source_language_iso639, 
-                    target_language_iso639, 
+                    request.text, 
+                    request.source_lang, 
+                    request.target_lang, 
                     cfg.engines.openai.model
                 )
             elif "custom" in model:
                 result = custom_translation(
-                    text, 
-                    source_language_iso639, 
-                    target_language_iso639, 
+                    request.text, 
+                    request.source_lang, 
+                    request.target_lang, 
                     model.split('__')[-1]
                 )
             else:
@@ -523,37 +528,6 @@ def translate_and_score(text, source_language_iso639, target_language_iso639):
 
     return output
 
-
-#---------------------#
-# FastAPI app         #
-#---------------------#
-
-@app.get("/")
-def read_root():
-    return {"status": "healthy"}
-
-
-class TranslateRequest(BaseModel):
-    text: str
-    source_lang: str
-    target_lang: str
-
-
-def is_valid_language(language_code):
-    return language_code in supported_languages
-
-
-@app.post("/translate")
-def update_item(req: TranslateRequest):
-    if not is_valid_language(req.source_lang) or not is_valid_language(req.target_lang):
-        raise HTTPException(status_code=400, detail="Invalid language code(s)")
-
-    # Now you can proceed with the translations
-    return translate_and_score(req.text, req.source_lang, req.target_lang)
-
-
-# if __name__ == "__main__":
-#     uvicorn.run(app, port=6000, host="0.0.0.0")
 
 if __name__ == "__main__":
     opea_microservices["opea_service@translation"].start()
